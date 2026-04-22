@@ -4,6 +4,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.ejercicio2_estudio_ia_dex.domain.FormUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -18,19 +19,40 @@ class MyFormsViewModel : ViewModel() {
 
     private val _uiState = MutableStateFlow(
         MyFormsUiState(
-            myForms = listOf()
+            myForms = listOf(),
+            loading = false,
+            loadingError = false
         )
     )
 
     val uiState = _uiState.asStateFlow()
 
     init {
-        CoroutineScope(Dispatchers.IO).launch {
-            val myForms = formUseCase.getMyReports()
-            _uiState.update {
-                it.copy(
-                    myForms = myForms
-                )
+        _uiState.update {
+            it.copy(
+                loading = true
+            )
+        }
+        viewModelScope.launch {
+            try {
+                val myForms = formUseCase.getMyReports()
+                _uiState.update {
+                    it.copy(
+                        myForms = myForms
+                    )
+                }
+                _uiState.update {
+                    it.copy(
+                        loading = false
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        loading = false,
+                        loadingError = true
+                    )
+                }
             }
         }
     }
@@ -45,6 +67,46 @@ class MyFormsViewModel : ViewModel() {
             }
             else -> {
                 CategoryType.PERSONAL.color
+            }
+        }
+    }
+
+    fun onCloseErrorModal() {
+        _uiState.update {
+            it.copy(
+                loadingError = false
+            )
+        }
+    }
+
+    fun onRetryLoadingData() {
+        _uiState.update {
+            it.copy(
+                loading = true,
+                loadingError = false
+            )
+        }
+
+        viewModelScope.launch {
+            try {
+                val myForms = formUseCase.getMyReports()
+                _uiState.update {
+                    it.copy(
+                        myForms = myForms
+                    )
+                }
+                _uiState.update {
+                    it.copy(
+                        loading = false
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        loading = false,
+                        loadingError = true
+                    )
+                }
             }
         }
     }

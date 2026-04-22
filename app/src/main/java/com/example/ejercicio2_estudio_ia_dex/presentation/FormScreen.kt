@@ -1,8 +1,10 @@
 package com.example.ejercicio2_estudio_ia_dex.presentation
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,6 +16,8 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,14 +28,23 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ejercicio2_estudio_ia_dex.R
 
 @Composable
-fun FormScreen() {
+fun FormScreen(
+    onGoBack: () -> Unit
+) {
 
     val viewModel = remember { FormViewModel() }
     val uiState by viewModel.uiState.collectAsState()
+    val toast = Toast.makeText(
+        LocalContext.current,
+        "Reporte guardado correctamente",
+        Toast.LENGTH_LONG)
 
     FormScreen(
         title = uiState.title,
@@ -47,8 +60,22 @@ fun FormScreen() {
         onSelectCategory = viewModel::onCategoryChange,
         onSaveChanges = viewModel::onButtonClicked,
         errors = uiState.errors,
-        buttonEnabled = uiState.buttonEnabled
+        buttonEnabled = uiState.buttonEnabled,
+        loading = uiState.loading,
+        onGoBack = onGoBack
     )
+
+    if (uiState.dataSent) {
+        toast.show()
+    }
+
+    if (uiState.loadError) {
+        ErrorModal(
+            message = "No ha podido guardarse el formulario. ¿Deseas reintentarlo?",
+            onClick = viewModel::onRetrySendData,
+            onClose = viewModel::onCloseErrorModal
+        )
+    }
 }
 
 @Composable
@@ -66,7 +93,9 @@ fun FormScreen(
     onSelectCategory: (String) -> Unit,
     onSaveChanges: () -> Unit,
     errors: List<Boolean>,
-    buttonEnabled: Boolean
+    buttonEnabled: Boolean,
+    loading: Boolean,
+    onGoBack: () -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -78,10 +107,23 @@ fun FormScreen(
             modifier = Modifier
                 .fillMaxSize()
         ) {
-            Text(
-                text = "Formulario",
-                fontSize = 26.sp
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                IconButton(
+                    onClick = onGoBack
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_back),
+                        contentDescription = ""
+                    )
+                }
+
+                Text(
+                    text = "Formulario",
+                    fontSize = 26.sp
+                )
+            }
 
             Spacer(modifier = Modifier.height(30.dp))
 
@@ -110,7 +152,7 @@ fun FormScreen(
                 minLines = 5,
                 supportingText = {
                     if (errors[1]) {
-                        Text("El título debe tener entre 20 y 500 caracteres")
+                        Text("La descripción debe tener entre 20 y 500 caracteres")
                     }
                 }
             )
@@ -135,7 +177,7 @@ fun FormScreen(
                 label = { Text(text = "Prioridad") },
                 supportingText = {
                     if (errors[2]) {
-                        Text("El título debe tener entre 5 y 60 caracteres")
+                        Text("La prioridad sólo puede ser de 1 a 5")
                     }
                 },
                 singleLine = true
@@ -170,6 +212,10 @@ fun FormScreen(
                 Text("Guardar cambios")
             }
         }
+    }
+
+    if (loading) {
+        Loader()
     }
 }
 

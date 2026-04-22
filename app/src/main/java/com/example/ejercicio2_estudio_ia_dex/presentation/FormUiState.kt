@@ -11,5 +11,7 @@ data class FormUiState(
     val buttonEnabled: Boolean,
     val errors: List<Boolean>,
     val categories: List<String>,
-    val selectedCategory: String
+    val selectedCategory: String,
+    val dataSent: Boolean,
+    val loadError: Boolean
 )

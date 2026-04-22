@@ -1,6 +1,7 @@
 package com.example.ejercicio2_estudio_ia_dex.presentation
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.ejercicio2_estudio_ia_dex.data.FormularioRequest
 import com.example.ejercicio2_estudio_ia_dex.domain.FormUseCase
 import kotlinx.coroutines.CoroutineScope
@@ -26,23 +27,69 @@ class FormViewModel(
             loading = false,
             errors = listOf(false, false, false, false),
             categories = listOf("Trabajo", "Estudios", "Personal"),
-            selectedCategory = "Trabajo"
+            selectedCategory = "Trabajo",
+            dataSent = false,
+            loadError = false
         )
     )
 
     val uiState = _uiState.asStateFlow()
-    val EMAIL_REGEX = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$"
+    val EMAIL_REGEX = "[a-zA-Z0-9_]+([.][a-zA-Z0-9_]+)*@[a-zA-Z0-9_]+([.][a-zA-Z0-9_]+)*[.][a-zA-Z]{2,5}"
+
+    fun onCloseErrorModal() {
+        _uiState.update {
+            it.copy(
+                loadError = false
+            )
+        }
+    }
+
+    fun onRetrySendData() {
+        onCloseErrorModal()
+        onButtonClicked()
+    }
 
     fun onButtonClicked() {
-        CoroutineScope(Dispatchers.IO).launch {
-            formUseCase.uploadForm(
-                FormularioRequest(
-                    uiState.value.title,
-                    uiState.value.description,
-                    uiState.value.selectedCategory,
-                    uiState.value.priority.toInt(),
-                    uiState.value.email
+        _uiState.update {
+            it.copy(
+                loading = true
+            )
+        }
+        viewModelScope.launch {
+            try {
+                formUseCase.uploadForm(
+                    FormularioRequest(
+                        uiState.value.title,
+                        uiState.value.description,
+                        uiState.value.selectedCategory,
+                        uiState.value.priority.toInt(),
+                        uiState.value.email
+                    )
                 )
+                reset()
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        loadError = true,
+                        loading = false
+                    )
+                }
+            }
+        }
+    }
+
+    private fun reset() {
+        _uiState.update {
+            it.copy(
+                title = "",
+                description = "",
+                priority = "1",
+                email = "",
+                buttonEnabled = false,
+                errors = listOf(false, false, false, false),
+                selectedCategory = "Trabajo",
+                dataSent = true,
+                loading = false
             )
         }
     }

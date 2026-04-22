@@ -34,17 +34,37 @@ import com.example.ejercicio2_estudio_ia_dex.R
 import com.example.ejercicio2_estudio_ia_dex.data.Formulario
 
 @Composable
-fun MyFormsScreen() {
+fun MyFormsScreen(
+    onNavigateToForm: () -> Unit
+) {
 
     val viewModel = remember { MyFormsViewModel() }
     val uiState = viewModel.uiState.collectAsState()
 
-    MyFormsScreenA()
+    MyFormsScreenA(
+        reports = uiState.value.myForms,
+        getBadgeStyle = viewModel::getCategoryStyle,
+        onNavigateToForm = onNavigateToForm
+    )
+
+    if (uiState.value.loading) {
+        Loader()
+    }
+
+    if (uiState.value.loadingError) {
+        ErrorModal(
+            message = "No se han podido cargar los reportes. ¿Deseas reintentarlo?",
+            onClick = viewModel::onRetryLoadingData,
+            onClose = viewModel::onCloseErrorModal
+        )
+    }
 }
 
 @Composable
 private fun MyFormsScreenA(
-//    reports: List<Formulario>
+    reports: List<Formulario>,
+    getBadgeStyle: (String) -> Long,
+    onNavigateToForm: () -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -62,7 +82,10 @@ private fun MyFormsScreenA(
             Box(
                 modifier = Modifier.weight(1f)
             ) {
-                ReportsContainer()
+                ReportsContainer(
+                    reports = reports,
+                    getBadgeStyle = getBadgeStyle
+                )
             }
 
             Row(
@@ -72,7 +95,7 @@ private fun MyFormsScreenA(
                 Button(
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF004C76)),
-                    onClick = {}
+                    onClick = onNavigateToForm
                 ) {
                     Text("Crear nuevo reporte")
                 }
@@ -82,7 +105,10 @@ private fun MyFormsScreenA(
 }
 
 @Composable
-fun ReportsContainer() {
+fun ReportsContainer(
+    reports: List<Formulario>,
+    getBadgeStyle: (String) -> Long
+) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -93,7 +119,7 @@ fun ReportsContainer() {
             modifier = Modifier
                 .verticalScroll(rememberScrollState())
         ) {
-            (0..10).forEach { item ->
+            reports.forEach { item ->
                 ElevatedCard(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -104,17 +130,19 @@ fun ReportsContainer() {
                     ) {
                         Row() {
                             Text(
-                                "Título $item",
+                                text = item.title,
                                 modifier = Modifier.weight(1f)
                             )
-                            Badge {
-                                Text("Categoría".uppercase())
+                            Badge(
+                                containerColor = Color(getBadgeStyle(item.category))
+                            ) {
+                                Text(item.category.uppercase())
                             }
                         }
 
                         Spacer(modifier = Modifier.height(10.dp))
 
-                        Text("Descripción Descripción Descripción Descripción DescripciónDescripción Descripción Descripción Descripción")
+                        Text(item.description)
 
                         Spacer(modifier = Modifier.height(8.dp))
                         HorizontalDivider(thickness = 2.dp)
@@ -122,14 +150,14 @@ fun ReportsContainer() {
 
                         Row() {
                             Text(
-                                text = "Prioridad: 1",
+                                text = "Prioridad: ${item.priority}",
                                 modifier = Modifier.weight(1f)
                             )
 
                             Badge(
                                 containerColor = Color(0xFFD6EFFF)
                             ) {
-                                Text("Correo: ")
+                                Text("Correo: ${item.email}")
                             }
                         }
                     }
