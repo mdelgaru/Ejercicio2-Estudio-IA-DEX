@@ -4,8 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.ejercicio2_estudio_ia_dex.data.FormularioRequest
 import com.example.ejercicio2_estudio_ia_dex.domain.FormUseCase
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -35,6 +33,7 @@ class FormViewModel(
 
     val uiState = _uiState.asStateFlow()
     val EMAIL_REGEX = "[a-zA-Z0-9_]+([.][a-zA-Z0-9_]+)*@[a-zA-Z0-9_]+([.][a-zA-Z0-9_]+)*[.][a-zA-Z]{2,5}"
+    val PRIORITY_REGEX = "^[1-5]$"
 
     fun onCloseErrorModal() {
         _uiState.update {
@@ -100,7 +99,10 @@ class FormViewModel(
                 title = title
             )
         }
-        checkInputs()
+        val isTitleWrong = uiState.value.title.length !in 5..60
+        val errors = uiState.value.errors.toMutableList()
+        errors[0] = isTitleWrong
+        updateErrors(errors)
     }
 
     fun onDescriptionChange(description: String) {
@@ -109,7 +111,11 @@ class FormViewModel(
                 description = description
             )
         }
-        checkInputs()
+
+        val isDescriptionWrong = uiState.value.description.length !in 20..500
+        val errors = uiState.value.errors.toMutableList()
+        errors[1] = isDescriptionWrong
+        updateErrors(errors)
     }
 
     fun onCategoryChange(category: String) {
@@ -126,7 +132,11 @@ class FormViewModel(
                 priority = priority
             )
         }
-        checkInputs()
+
+        val isPriorityWrong = !isValidPriority(priority)
+        val errors = uiState.value.errors.toMutableList()
+        errors[2] = isPriorityWrong
+        updateErrors(errors)
     }
 
     fun onEmailChange(email: String) {
@@ -135,29 +145,41 @@ class FormViewModel(
                 email = email
             )
         }
-        checkInputs()
+
+        val isDescriptionWrong = !isValidEmail(email)
+        val errors = uiState.value.errors.toMutableList()
+        errors[3] = isDescriptionWrong
+        updateErrors(errors)
     }
 
-    private fun checkInputs() {
-        _uiState.update { it ->
+    private fun updateErrors(errors: List<Boolean>) {
+        _uiState.update {
             it.copy(
-                errors = listOf(
-                    uiState.value.title.length !in 5..60,
-                    uiState.value.description.length !in 20..500,
-                    !isValidPriority(uiState.value.priority),
-                    !isValidEmail(uiState.value.email),
-                ),
-                buttonEnabled = uiState.value.errors.any { it }
+                errors = errors
+            )
+        }
+        enableButton()
+    }
+
+    private fun enableButton() {
+        val hasErrors = uiState.value.errors.any { error -> error }
+        val passedConditions = uiState.value.title.length in 5..60 &&
+                uiState.value.description.length in 20..500 &&
+                isValidPriority(uiState.value.priority) &&
+                isValidEmail(uiState.value.email)
+
+        _uiState.update {
+            it.copy(
+                buttonEnabled = !hasErrors && passedConditions
             )
         }
     }
 
     private fun isValidEmail(email: String): Boolean {
-        val regex = EMAIL_REGEX.toRegex()
-        return regex.matches(email)
+        return EMAIL_REGEX.toRegex().matches(email)
     }
 
     private fun isValidPriority(priority: String): Boolean {
-        return  "^[1-5]$".toRegex().matches(priority)
+        return  PRIORITY_REGEX.toRegex().matches(priority)
     }
 }
