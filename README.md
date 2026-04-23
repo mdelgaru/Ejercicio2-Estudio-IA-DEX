@@ -8,7 +8,7 @@ Esta aplicación es un ejercicio de desarrollo móvil en la que se recuperan dat
 
 ## DEMO
 
-Link:
+Link: https://github.com/mdelgaru/Ejercicio2-Estudio-IA-DEX/blob/main/demo.mp4
 > Vídeo demonstrativo del funcionamiento de la aplicación: navegación, envío y recuperación de datos, forzar errores y validación de campos.
 
 ## Características Principales
